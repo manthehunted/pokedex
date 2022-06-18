@@ -1,20 +1,22 @@
+use std::sync::Arc;
+
 use super::entities::{PokemonName, PokemonNumber, PokemonTypes};
 use crate::repositories::pokemon::{InMemoryRepository, Insert, Repository};
 
-enum Response {
+pub enum Response {
     Ok(u16),
     BadRequest,
     Conflict,
     Error,
 }
 
-struct Request {
-    number: u16,
-    name: String,
-    types: Vec<String>,
+pub struct Request {
+    pub number: u16,
+    pub name: String,
+    pub types: Vec<String>,
 }
 
-fn execute(repo: &mut dyn Repository, req: Request) -> Response {
+pub fn execute(repo: Arc<dyn Repository>, req: Request) -> Response {
     match (
         PokemonNumber::try_from(req.number),
         PokemonName::try_from(req.name),
@@ -36,13 +38,13 @@ mod test {
     #[test]
     fn it_should_return_the_pokemon_number_otherwise() {
         let number = 25;
-        let mut repo = InMemoryRepository::new();
+        let mut repo = Arc::new(InMemoryRepository::new());
         let req = Request {
             number,
             name: String::from("Pikachu"),
             types: vec![String::from("Electric")],
         };
-        let res = execute(&mut repo, req);
+        let res = execute(repo, req);
 
         match res {
             Response::Ok(res) => assert_eq!(res, number),
@@ -53,13 +55,13 @@ mod test {
     #[test]
     fn it_should_return_a_bad_request_err_when_a_request_is_invalid() {
         let number = 25;
-        let mut repo = InMemoryRepository::new();
+        let mut repo = Arc::new(InMemoryRepository::new());
         let req = Request {
             number,
             name: String::from(""),
             types: vec![String::from("Electric")],
         };
-        let res = execute(&mut repo, req);
+        let res = execute(repo, req);
 
         match res {
             Response::BadRequest => {}
@@ -73,7 +75,7 @@ mod test {
         let name = PokemonName::try_from(String::from("Pikachu")).unwrap();
         let types = PokemonTypes::try_from(vec![String::from("Electric")]).unwrap();
 
-        let mut repo = InMemoryRepository::new();
+        let mut repo = Arc::new(InMemoryRepository::new());
         repo.insert(number, name, types);
         let req = Request {
             number: 25,
@@ -81,7 +83,7 @@ mod test {
             types: vec![String::from("Fire")],
         };
 
-        let res = execute(&mut repo, req);
+        let res = execute(repo, req);
 
         match res {
             Response::Conflict => {}
@@ -91,7 +93,7 @@ mod test {
 
     #[test]
     fn it_should_return_an_error_when_an_unexpected_error_happens() {
-        let mut repo = InMemoryRepository::new().with_error();
+        let mut repo = Arc::new(InMemoryRepository::new().with_error());
 
         let req = Request {
             number: 25,
@@ -99,7 +101,7 @@ mod test {
             types: vec![String::from("Fire")],
         };
 
-        let res = execute(&mut repo, req);
+        let res = execute(repo, req);
 
         match res {
             Response::Error => {}
