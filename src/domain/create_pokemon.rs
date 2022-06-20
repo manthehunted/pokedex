@@ -1,14 +1,9 @@
 use std::sync::Arc;
 
-use super::entities::{PokemonName, PokemonNumber, PokemonTypes};
-use crate::repositories::pokemon::{InMemoryRepository, Insert, Repository};
+use serde::Serialize;
 
-pub enum Response {
-    Ok(u16),
-    BadRequest,
-    Conflict,
-    Error,
-}
+use super::entities::{Pokemon, PokemonName, PokemonNumber, PokemonTypes};
+use crate::repositories::pokemon::{InMemoryRepository, InsertError, Repository};
 
 pub struct Request {
     pub number: u16,
@@ -16,18 +11,41 @@ pub struct Request {
     pub types: Vec<String>,
 }
 
-pub fn execute(repo: Arc<dyn Repository>, req: Request) -> Response {
+pub enum Error {
+    BadRequest,
+    Conflict,
+    Unknown,
+}
+
+#[derive(Serialize)]
+pub struct Response {
+    pub number: u16,
+    pub name: String,
+    pub types: Vec<String>,
+}
+
+impl From<Pokemon> for Response {
+    fn from(pokemon: Pokemon) -> Self {
+        Self {
+            number: pokemon.number.try_into().expect("pokemon number"),
+            name: pokemon.name.try_into().expect("pokemon name"),
+            types: Vec::<String>::from(pokemon.types),
+        }
+    }
+}
+
+pub fn execute(repo: Arc<dyn Repository>, req: Request) -> Result<Response, Error> {
     match (
         PokemonNumber::try_from(req.number),
         PokemonName::try_from(req.name),
         PokemonTypes::try_from(req.types),
     ) {
         (Ok(number), Ok(name), Ok(types)) => match repo.insert(number, name, types) {
-            Insert::Ok(number) => Response::Ok(number),
-            Insert::Conflict => Response::Conflict,
-            Insert::Error => Response::Error,
+            Ok(pokemon) => Ok(pokemon.into()),
+            Err(InsertError::Conflict) => Err(Error::Conflict),
+            Err(InsertError::Unknown) => Err(Error::Unknown),
         },
-        _ => Response::BadRequest,
+        _ => Err(Error::BadRequest),
     }
 }
 
@@ -47,7 +65,15 @@ mod test {
         let res = execute(repo, req);
 
         match res {
-            Response::Ok(res) => assert_eq!(res, number),
+            Ok(Response {
+                number,
+                name,
+                types,
+            }) => {
+                assert_eq!(number, 25);
+                assert_eq!(name, "Pikachu".to_string());
+                assert_eq!(types, vec![String::from("Electric")]);
+            }
             _ => unreachable!(),
         }
     }
@@ -64,7 +90,7 @@ mod test {
         let res = execute(repo, req);
 
         match res {
-            Response::BadRequest => {}
+            Err(Error::BadRequest) => {}
             _ => unreachable!(),
         }
     }
@@ -86,7 +112,7 @@ mod test {
         let res = execute(repo, req);
 
         match res {
-            Response::Conflict => {}
+            Err(Error::Conflict) => {}
             _ => unreachable!(),
         }
     }
@@ -104,7 +130,7 @@ mod test {
         let res = execute(repo, req);
 
         match res {
-            Response::Error => {}
+            Err(Error::Unknown) => {}
             _ => unreachable!(),
         }
     }

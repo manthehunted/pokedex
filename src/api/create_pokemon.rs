@@ -7,12 +7,11 @@ use std::fmt::Display;
 use std::io::Read;
 use std::sync::Arc;
 
-use rouille;
 use serde::{Deserialize, Serialize};
 
 use super::Status;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct Request {
     number: u16,
     name: String,
@@ -47,12 +46,14 @@ struct Response {
 pub fn serve(req: &rouille::Request, repo: Arc<dyn Repository>) -> rouille::Response {
     match rouille::input::json_input::<Request>(req) {
         Ok(req) => match create_pokemon::execute(repo, req.into()) {
-            create_pokemon::Response::Ok(number) => rouille::Response::json(&Response {
-                message: format!("successfully inserted {}", number),
+            Ok(pokemon) => rouille::Response::json(&Response {
+                message: serde_json::to_string(&pokemon).expect("expect pokemon response"),
             }),
-            create_pokemon::Response::BadRequest => rouille::Response::from(Status::BadRequest),
-            create_pokemon::Response::Conflict => rouille::Response::from(Status::Conflict),
-            create_pokemon::Response::Error => rouille::Response::from(Status::InternalServerError),
+            Err(create_pokemon::Error::BadRequest) => rouille::Response::from(Status::BadRequest),
+            Err(create_pokemon::Error::Conflict) => rouille::Response::from(Status::Conflict),
+            Err(create_pokemon::Error::Unknown) => {
+                rouille::Response::from(Status::InternalServerError)
+            }
         },
         _ => rouille::Response::from(Status::BadRequest),
     }
