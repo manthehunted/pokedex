@@ -2,6 +2,9 @@ use crate::repositories::pokemon::Repository;
 use std::sync::Arc;
 
 mod create_pokemon;
+mod delete_pokemon;
+mod fetch_all_pokemons;
+mod fetch_pokemon;
 mod health;
 
 enum Status {
@@ -34,6 +37,9 @@ pub fn serve(url: &str, repo: Arc<dyn Repository>) {
         router!(
         req,
         (GET)(/health) => {health::serve()},
+        (GET)(/) => {fetch_all_pokemons::serve(repo.clone())},
+        (GET)(/{number:u16}) => {fetch_pokemon::serve(number, repo.clone())},
+        (DELETE)(/{number:u16}) => {delete_pokemon::serve(number, repo.clone())},
         (POST)(/) => {create_pokemon::serve(req, repo.clone())},
         _ => rouille::Response::from(Status::NotFound)
         )

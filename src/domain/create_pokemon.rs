@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serde::Serialize;
 
 use super::entities::{Pokemon, PokemonName, PokemonNumber, PokemonTypes};
-use crate::repositories::pokemon::{InMemoryRepository, InsertError, Repository};
+use crate::repositories::pokemon::{InsertError, Repository};
 
 pub struct Request {
     pub number: u16,
@@ -52,6 +52,7 @@ pub fn execute(repo: Arc<dyn Repository>, req: Request) -> Result<Response, Erro
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::InMemoryRepository;
 
     #[test]
     fn it_should_return_the_pokemon_number_otherwise() {

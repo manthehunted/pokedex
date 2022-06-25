@@ -1,10 +1,6 @@
-use crate::{
-    domain::{create_pokemon, entities::Pokemon},
-    repositories::pokemon::Repository,
-};
+use crate::{domain::create_pokemon, repositories::pokemon::Repository};
 use core::fmt;
 use std::fmt::Display;
-use std::io::Read;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};

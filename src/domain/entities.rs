@@ -1,7 +1,7 @@
 use core::fmt;
 use std::fmt::Display;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Pokemon {
     pub number: PokemonNumber,
     pub name: PokemonName,
@@ -28,7 +28,7 @@ impl fmt::Display for Pokemon {
     }
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Ord, Eq, PartialOrd, Debug)]
 pub struct PokemonNumber(u16);
 
 impl Display for PokemonNumber {
@@ -55,7 +55,7 @@ impl From<PokemonNumber> for u16 {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PokemonName(String);
 
 impl Display for PokemonName {
@@ -82,7 +82,7 @@ impl From<PokemonName> for String {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PokemonTypes(Vec<PokemonType>);
 
 impl Display for PokemonTypes {
@@ -148,5 +148,46 @@ impl From<PokemonType> for String {
             PokemonType::Fire => "Fire".to_string(),
             _ => unreachable!(),
         }
+    }
+}
+
+#[cfg(test)]
+impl PokemonNumber {
+    pub fn pikachu() -> Self {
+        Self(25)
+    }
+
+    pub fn charmander() -> Self {
+        Self(4)
+    }
+
+    pub fn bad() -> Self {
+        Self(0)
+    }
+}
+
+#[cfg(test)]
+impl PokemonName {
+    pub fn pikachu() -> Self {
+        Self(String::from("Pikachu"))
+    }
+
+    pub fn charmander() -> Self {
+        Self(String::from("Charmander"))
+    }
+
+    pub fn bad() -> Self {
+        Self(String::from(""))
+    }
+}
+
+#[cfg(test)]
+impl PokemonTypes {
+    pub fn pikachu() -> Self {
+        Self(vec![PokemonType::Electric])
+    }
+
+    pub fn charmander() -> Self {
+        Self(vec![PokemonType::Fire])
     }
 }
